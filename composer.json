@@ -1,0 +1,19 @@
+{
+  "name": "tourze/symfony-workerman-bundle",
+  "description": "Workerman模块",
+  "type": "symfony-bundle",
+  "license": "MIT",
+  "require": {
+    "php": "^8.1",
+    "fidry/cpu-core-counter": "^1.2.0",
+    "phpinnacle/buffer": "^1.2.0",
+    "symfony/framework-bundle": "^6.4",
+    "workerman/workerman": "^5.1",
+    "workerman/crontab": "^1.0.7"
+  },
+  "autoload": {
+    "psr-4": {
+      "Tourze\\Symfony\\WorkermanBundle\\": "src"
+    }
+  }
+}
