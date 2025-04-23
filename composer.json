@@ -13,6 +13,7 @@
     "symfony/console": "^6.4",
     "symfony/framework-bundle": "^6.4",
     "workerman/workerman": "^5.1",
+    "symfony/yaml": "^6.4 || ^7.1",
     "workerman/crontab": "^1.0.7"
   },
   "require-dev": {
