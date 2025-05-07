@@ -24,5 +24,10 @@
     "psr-4": {
       "Tourze\\Symfony\\WorkermanBundle\\": "src"
     }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tourze\\Symfony\\WorkermanBundle\\Tests\\": "tests"
+    }
   }
 }
