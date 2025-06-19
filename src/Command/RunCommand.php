@@ -18,7 +18,7 @@ use Tourze\Symfony\WorkermanBundle\Contracts\WorkerBuilderInterface;
 use Workerman\Crontab\Crontab;
 use Workerman\Worker;
 
-#[AsCommand(name: RunCommand::NAME, description: 'Workerman服务入口')]
+#[AsCommand(name: self::NAME, description: 'Workerman服务入口')]
 class RunCommand extends Command
 {
     public const NAME = 'workerman:run';
