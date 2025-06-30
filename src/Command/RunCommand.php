@@ -25,8 +25,8 @@ class RunCommand extends Command
 
     public function __construct(
         private readonly KernelInterface $kernel,
-        #[TaggedIterator(WorkerBuilderInterface::WORKER_SERVICE_TAG)] private readonly iterable $workerBuilders,
-        #[TaggedIterator(TimerInterface::SERVICE_TAG)] private readonly iterable $timers,
+        #[TaggedIterator(tag: WorkerBuilderInterface::WORKER_SERVICE_TAG)] private readonly iterable $workerBuilders,
+        #[TaggedIterator(tag: TimerInterface::SERVICE_TAG)] private readonly iterable $timers,
         private readonly CpuCoreCounter $cpuCoreCounter,
     ) {
         parent::__construct();

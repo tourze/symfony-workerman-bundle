@@ -5,7 +5,7 @@ namespace Tourze\Symfony\WorkermanBundle\Contracts;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 use Workerman\Connection\ConnectionInterface;
 
-#[AutoconfigureTag('workerman.connectable')]
+#[AutoconfigureTag(name: 'workerman.connectable')]
 interface ConnectableInterface
 {
     /**

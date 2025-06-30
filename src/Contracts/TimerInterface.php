@@ -7,7 +7,7 @@ use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 /**
  * @see https://packagist.org/packages/workerman/crontab
  */
-#[AutoconfigureTag(self::SERVICE_TAG)]
+#[AutoconfigureTag(name: self::SERVICE_TAG)]
 interface TimerInterface
 {
     final const SERVICE_TAG = 'workerman.timer';

@@ -5,7 +5,7 @@ namespace Tourze\Symfony\WorkermanBundle\Contracts;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 use Workerman\Worker;
 
-#[AutoconfigureTag(WorkerBuilderInterface::WORKER_SERVICE_TAG)]
+#[AutoconfigureTag(name: WorkerBuilderInterface::WORKER_SERVICE_TAG)]
 interface WorkerBuilderInterface
 {
     const WORKER_SERVICE_TAG = 'workerman.worker';

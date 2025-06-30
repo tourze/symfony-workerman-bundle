@@ -5,7 +5,7 @@ namespace Tourze\Symfony\WorkermanBundle\Contracts;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 use Workerman\Connection\ConnectionInterface;
 
-#[AutoconfigureTag('workerman.buffer-aware')]
+#[AutoconfigureTag(name: 'workerman.buffer-aware')]
 interface BufferAwareInterface
 {
     /**
