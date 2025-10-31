@@ -10,10 +10,10 @@ use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 #[AutoconfigureTag(name: self::SERVICE_TAG)]
 interface TimerInterface
 {
-    final const SERVICE_TAG = 'workerman.timer';
+    final public const SERVICE_TAG = 'workerman.timer';
 
     /**
-     * 定时任务表达式
+     * 定时任务的 Cron 表达式
      */
     public function getExpression(): string;
 

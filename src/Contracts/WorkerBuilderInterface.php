@@ -8,28 +8,28 @@ use Workerman\Worker;
 #[AutoconfigureTag(name: WorkerBuilderInterface::WORKER_SERVICE_TAG)]
 interface WorkerBuilderInterface
 {
-    const WORKER_SERVICE_TAG = 'workerman.worker';
+    public const WORKER_SERVICE_TAG = 'workerman.worker';
 
     /**
-     * 服务名
+     * 服务名称
      */
     public function getName(): string;
 
     /**
-     * Worker启动时触发
+     * Worker 启动时触发
      *
      * @see https://manual.workerman.net/doc/zh-cn/worker/on-worker-start.html
      */
     public function onWorkerStart(Worker $worker): void;
 
     /**
-     * Worker停止时触发
-     * 这个在官网文档没介绍
+     * Worker 停止时触发
+     * 官方文档中未提及此方法
      */
     public function onWorkerStop(Worker $worker): void;
 
     /**
-     * Worker重启
+     * Worker 重载时的处理逻辑
      *
      * @see https://manual.workerman.net/doc/zh-cn/worker/on-worker-reload.html
      */

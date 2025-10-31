@@ -10,3 +10,7 @@ services:
     resource: '../../Command/'
   Tourze\Symfony\WorkermanBundle\Contracts\:
     resource: '../../Contracts/'
+  Tourze\Symfony\WorkermanBundle\Service\:
+    resource: '../../Service/'
+  Tourze\Symfony\WorkermanBundle\Configuration\:
+    resource: '../../Configuration/'

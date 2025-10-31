@@ -9,17 +9,12 @@ use Workerman\Connection\ConnectionInterface;
 interface ConnectableInterface
 {
     /**
-     * 协议，如 tcp/udp
+     * 协议类型，如 tcp/udp
      */
     public function getTransport(): string;
 
     /**
-     * 返回协议类
-     */
-    public function getProtocolClass(): ?string;
-
-    /**
-     * 监听IP，一般是127.0.0.1或0.0.0.0
+     * 监听 IP 地址，通常为 127.0.0.1 或 0.0.0.0
      */
     public function getListenIp(): string;
 
@@ -29,28 +24,28 @@ interface ConnectableInterface
     public function getListenPort(): int;
 
     /**
-     * 有连接时触发
+     * 连接建立时触发
      *
      * @see https://manual.workerman.net/doc/zh-cn/worker/on-connect.html
      */
     public function onConnect(ConnectionInterface $connection): void;
 
     /**
-     * 连接断开
+     * 连接关闭时触发
      *
      * @see https://manual.workerman.net/doc/zh-cn/worker/on-close.html
      */
     public function onClose(ConnectionInterface $connection): void;
 
     /**
-     * 收到消息
+     * 接收消息时触发
      *
      * @see https://manual.workerman.net/doc/zh-cn/worker/on-message.html
      */
     public function onMessage(ConnectionInterface $connection, string $buffer): void;
 
     /**
-     * 连接发生错误
+     * 连接错误时触发
      *
      * @see https://manual.workerman.net/doc/zh-cn/worker/on-error.html
      */

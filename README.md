@@ -1,101 +1,501 @@
-# Workerman模块
+# symfony-workerman-bundle
 
-## 核心功能与技术原理
+[English](README.md) | [中文](README.zh-CN.md)
 
-WorkermanBundle 是基于 [Workerman](https://www.workerman.net/) 的 Symfony 集成模块，提供了在 Symfony 应用中使用 Workerman 高性能异步网络通信框架的能力。该模块通过抽象接口和服务标签系统，实现了 Workerman 与 Symfony 依赖注入容器的无缝集成。
+[![Latest Version](https://img.shields.io/packagist/v/tourze/symfony-workerman-bundle.svg?style=flat-square)](https://packagist.org/packages/tourze/symfony-workerman-bundle)
+[![Total Downloads](https://img.shields.io/packagist/dt/tourze/symfony-workerman-bundle.svg?style=flat-square)](https://packagist.org/packages/tourze/symfony-workerman-bundle)
+[![PHP Version](https://img.shields.io/packagist/php-v/tourze/symfony-workerman-bundle.svg?style=flat-square)](https://packagist.org/packages/tourze/symfony-workerman-bundle)
+[![License](https://img.shields.io/packagist/l/tourze/symfony-workerman-bundle.svg?style=flat-square)](https://packagist.org/packages/tourze/symfony-workerman-bundle)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/tourze/php-monorepo/ci.yml?style=flat-square)](https://github.com/tourze/php-monorepo/actions)
+[![Code Coverage](https://img.shields.io/codecov/c/github/tourze/php-monorepo.svg?style=flat-square)](https://codecov.io/gh/tourze/php-monorepo)
 
-核心功能包括：
+Symfony integration bundle for Workerman, a high-performance asynchronous PHP socket framework.
 
-- 提供基于命令行的 Workerman 服务启动机制
-- 自动发现并注册实现了特定接口的 Worker 服务
-- 支持 TCP/UDP 等多种网络协议的服务端实现
-- 提供缓冲区管理机制
-- 集成 Crontab 定时任务系统
-- 自动根据 CPU 核心数优化 Worker 进程数量
+## Table of Contents
 
-## 架构设计与关键类
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Commands](#commands)
+- [Core Concepts](#core-concepts)
+- [Advanced Usage](#advanced-usage)
+- [Architecture Diagram](#architecture-diagram)
+- [Technical Notes](#technical-notes)
+- [Dependencies](#dependencies)
+- [Contributing](#contributing)
+- [License](#license)
 
-### 核心接口
+## Features
 
-Bundle 通过四个核心接口定义了 Workerman 服务的行为规范：
+- Command-line based Workerman service management
+- Automatic discovery and registration of Worker services through interfaces
+- Support for TCP/UDP and other network protocols
+- Buffer management mechanism
+- Integrated Crontab scheduling system
+- Automatic Worker process optimization based on CPU cores
+- Seamless integration with Symfony dependency injection container
 
-1. **WorkerBuilderInterface**：Worker 服务的基础接口，定义了 Worker 的生命周期事件处理方法
-   - `getName()`: 定义服务标识
-   - `onWorkerStart()`: Worker 启动时的初始化逻辑
-   - `onWorkerStop()`: Worker 停止时的清理逻辑
-   - `onWorkerReload()`: Worker 重载时的处理逻辑
+## Installation
 
-2. **ConnectableInterface**：可连接的 Worker 服务接口，定义了网络连接相关的事件处理方法
-   - `getTransport()`: 指定传输协议（tcp/udp）
-   - `getProtocolClass()`: 自定义协议处理类
-   - `getListenIp()/getListenPort()`: 监听配置
-   - 连接生命周期事件：`onConnect/onClose/onMessage/onError`
-
-3. **BufferAwareInterface**：缓冲区感知接口，定义了缓冲区管理相关的事件处理方法
-   - `onBufferFull()`: 发送缓冲区满时的处理
-   - `onBufferDrain()`: 发送缓冲区清空时的处理
-
-4. **TimerInterface**：定时任务接口，基于 workerman/crontab 实现
-   - `getExpression()`: 定义 Cron 表达式
-   - `execute()`: 定时执行的任务逻辑
-
-### 命令行组件
-
-`RunCommand` 类是模块的核心执行入口，负责：
-
-- 收集所有标记为 `workerman.worker` 的服务
-- 收集并注册所有 `workerman.timer` 定时任务
-- 根据服务实现的接口类型配置 Worker 实例
-- 设置 Worker 进程数量为 CPU 核心数
-- 配置 PID 文件和日志文件路径
-- 启动 Workerman 服务
-
-## 组件交互关系
-
-```mermaid
-graph TD
-    A[RunCommand] -->|收集| B[WorkerBuilderInterface 服务]
-    A -->|收集| T[TimerInterface 服务]
-    B -->|可选实现| C[ConnectableInterface]
-    B -->|可选实现| D[BufferAwareInterface]
-    A -->|创建| E[Worker 实例]
-    E -->|绑定事件| B
-    E -->|条件绑定事件| C
-    E -->|条件绑定事件| D
-    T -->|注册到| E
-    F[CpuCoreCounter] -->|提供| A
+```bash
+composer require tourze/symfony-workerman-bundle
 ```
 
-## 扩展机制
+## Quick Start
 
-Bundle 采用标签自动配置机制实现扩展：
+### 1. Create a Worker Service
 
-1. 实现 `WorkerBuilderInterface` 的服务会自动被标记为 `workerman.worker`
-2. 实现 `ConnectableInterface` 的服务会自动被标记为 `workerman.connectable`
-3. 实现 `BufferAwareInterface` 的服务会自动被标记为 `workerman.buffer-aware`
-4. 实现 `TimerInterface` 的服务会自动被标记为 `workerman.timer`
+```php
+<?php
 
-开发者只需实现相应接口，服务会被自动发现并集成到 Workerman 运行时中。
+namespace App\Worker;
 
-## 依赖关系
+use Tourze\Symfony\WorkermanBundle\Contracts\ConnectableInterface;
+use Tourze\Symfony\WorkermanBundle\Contracts\WorkerBuilderInterface;
+use Workerman\Connection\TcpConnection;
+use Workerman\Worker;
 
-- 核心依赖：
-  - `workerman/workerman`: 提供底层网络通信框架
-  - `workerman/crontab`: 提供定时任务支持
-- 辅助依赖：
-  - `fidry/cpu-core-counter`: 用于检测系统 CPU 核心数
-  - `phpinnacle/buffer`: 提供高效的二进制数据缓冲区处理
+class EchoWorker implements WorkerBuilderInterface, ConnectableInterface
+{
+    public function getName(): string
+    {
+        return 'echo-server';
+    }
 
-## 技术限制与注意事项
+    public function getTransport(): string
+    {
+        return 'tcp';
+    }
 
-- Workerman 要求 PHP 运行在 CLI 模式下
-- 在生产环境中，应使用 daemon 模式运行服务
-- 由于 Workerman 采用多进程模型，需注意：
-  - 共享资源的并发访问问题
-  - 定时任务在每个 Worker 进程中都会执行
-  - 服务实现类应避免保存状态，或确保状态在多进程环境下的一致性
-- 在高并发场景下：
-  - 应关注缓冲区管理以避免内存溢出
-  - 合理设置 Worker 进程数，避免过多进程导致系统资源耗尽
-  - 对于 CPU 密集型任务，建议保持 Worker 数量等于 CPU 核心数
-  - 对于 IO 密集型任务，可适当增加 Worker 数量
+    public function getListenIp(): string
+    {
+        return '0.0.0.0';
+    }
+
+    public function getListenPort(): int
+    {
+        return 2345;
+    }
+
+    public function onWorkerStart(Worker $worker): void
+    {
+        echo "Worker started\n";
+    }
+
+    public function onWorkerStop(Worker $worker): void
+    {
+        echo "Worker stopped\n";
+    }
+
+    public function onWorkerReload(Worker $worker): void
+    {
+        echo "Worker reloaded\n";
+    }
+
+    public function onConnect(TcpConnection $connection): void
+    {
+        echo "New connection from {$connection->getRemoteIp()}\n";
+    }
+
+    public function onMessage(TcpConnection $connection, mixed $data): void
+    {
+        $connection->send("Echo: {$data}");
+    }
+
+    public function onClose(TcpConnection $connection): void
+    {
+        echo "Connection closed\n";
+    }
+
+    public function onError(TcpConnection $connection, int $code, string $msg): void
+    {
+        echo "Error: {$msg} (code: {$code})\n";
+    }
+}
+```
+
+### 2. Create a Timer Task
+
+```php
+<?php
+
+namespace App\Timer;
+
+use Tourze\Symfony\WorkermanBundle\Contracts\TimerInterface;
+
+class HeartbeatTimer implements TimerInterface
+{
+    public function getExpression(): string
+    {
+        return '*/30 * * * * *'; // Every 30 seconds
+    }
+
+    public function execute(): void
+    {
+        echo "Heartbeat at " . date('Y-m-d H:i:s') . "\n";
+    }
+}
+```
+
+### 3. Run the Workerman Service
+
+```bash
+# Start the service
+php bin/console workerman:run start
+
+# Start in daemon mode
+php bin/console workerman:run start --daemon
+
+# Stop the service
+php bin/console workerman:run stop
+
+# Restart the service
+php bin/console workerman:run restart
+
+# Reload the service
+php bin/console workerman:run reload
+
+# Check service status
+php bin/console workerman:run status
+
+# Check connections
+php bin/console workerman:run connections
+```
+
+## Commands
+
+### workerman:run
+
+The main command to manage Workerman services.
+
+**Usage:**
+```bash
+php bin/console workerman:run <action> [options]
+```
+
+**Arguments:**
+- `action`: Required. The action to perform (start|stop|restart|reload|status|connections)
+
+**Options:**
+- `-d, --daemon`: Run in daemon mode (for start action)
+
+**Actions:**
+- `start`: Start all registered Worker services
+- `stop`: Stop all running Worker services
+- `restart`: Restart all Worker services
+- `reload`: Gracefully reload all Worker services
+- `status`: Display the status of all Worker services
+- `connections`: Display connection information
+
+### workerman:tcp
+
+Start a single-process TCP Worker server with Symfony Event integration.
+
+**Usage:**
+```bash
+php bin/console workerman:tcp [options]
+```
+
+**Options:**
+- `--host`: Listen host (default: 127.0.0.1 or env WORKERMAN_TCP_HOST)
+- `-p, --port`: Listen port (default: 2345 or env WORKERMAN_TCP_PORT)
+- `-d, --daemon`: Run in daemon mode
+
+**Example:**
+```bash
+# Start TCP server on default port
+php bin/console workerman:tcp
+
+# Start on custom host and port
+php bin/console workerman:tcp --host=0.0.0.0 --port=8080
+
+# Start in daemon mode
+php bin/console workerman:tcp -d
+```
+
+## Core Concepts
+
+### Interfaces
+
+1. **WorkerBuilderInterface**: Base interface for Worker services
+    - `getName()`: Define service identifier
+    - `onWorkerStart()`: Worker startup initialization
+    - `onWorkerStop()`: Worker cleanup logic
+    - `onWorkerReload()`: Worker reload handling
+
+2. **ConnectableInterface**: Interface for network-connected Workers
+    - `getTransport()`: Specify transport protocol (tcp/udp)
+    - `getListenIp()/getListenPort()`: Listen configuration
+    - Connection events: `onConnect/onClose/onMessage/onError`
+
+3. **BufferAwareInterface**: Buffer management interface
+    - `onBufferFull()`: Handle when send buffer is full
+    - `onBufferDrain()`: Handle when send buffer is drained
+
+4. **TimerInterface**: Timer task interface based on workerman/crontab
+    - `getExpression()`: Define Cron expression
+    - `execute()`: Task execution logic
+
+### Service Auto-configuration
+
+Services implementing the above interfaces are automatically tagged:
+- `WorkerBuilderInterface` → `workerman.worker`
+- `ConnectableInterface` → `workerman.connectable`
+- `BufferAwareInterface` → `workerman.buffer-aware`
+- `TimerInterface` → `workerman.timer`
+
+## TCP Worker Event System
+
+The `workerman:tcp` command provides a Symfony Event-based TCP server. All Workerman events are converted to Symfony Events for easy integration.
+
+### Available Events
+
+- `TcpWorkerStartEvent`: Fired when the Worker starts
+- `TcpWorkerStopEvent`: Fired when the Worker stops
+- `TcpWorkerConnectEvent`: Fired when a client connects
+- `TcpWorkerMessageEvent`: Fired when a message is received
+- `TcpWorkerCloseEvent`: Fired when a connection closes
+- `TcpWorkerErrorEvent`: Fired when an error occurs
+
+### Example Event Listener
+
+```php
+<?php
+
+namespace App\EventListener;
+
+use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Tourze\Symfony\WorkermanBundle\Event\TcpWorkerConnectEvent;
+use Tourze\Symfony\WorkermanBundle\Event\TcpWorkerMessageEvent;
+use Tourze\Symfony\WorkermanBundle\Event\TcpWorkerCloseEvent;
+
+class TcpServerListener implements EventSubscriberInterface
+{
+    public static function getSubscribedEvents(): array
+    {
+        return [
+            TcpWorkerConnectEvent::class => 'onConnect',
+            TcpWorkerMessageEvent::class => 'onMessage',
+            TcpWorkerCloseEvent::class => 'onClose',
+        ];
+    }
+    
+    public function onConnect(TcpWorkerConnectEvent $event): void
+    {
+        $connection = $event->getConnection();
+        $connection->send("Welcome to TCP Server!\n");
+        
+        // Store connection metadata
+        $connection->uid = uniqid();
+        echo "Client {$connection->uid} connected from {$connection->getRemoteIp()}\n";
+    }
+    
+    public function onMessage(TcpWorkerMessageEvent $event): void
+    {
+        $connection = $event->getConnection();
+        $message = $event->getMessage();
+        
+        // Echo the message back
+        $connection->send("Echo: {$message}");
+        
+        // Broadcast to all connections
+        foreach ($connection->worker->connections as $conn) {
+            if ($conn->id !== $connection->id) {
+                $conn->send("Client {$connection->uid} says: {$message}");
+            }
+        }
+    }
+    
+    public function onClose(TcpWorkerCloseEvent $event): void
+    {
+        $connection = $event->getConnection();
+        echo "Client {$connection->uid} disconnected\n";
+    }
+}
+```
+
+### Configuration
+
+You can configure the TCP Worker using environment variables:
+
+```bash
+# .env
+WORKERMAN_TCP_HOST=0.0.0.0
+WORKERMAN_TCP_PORT=8080
+WORKERMAN_TCP_NAME=my-tcp-server
+```
+
+## Advanced Usage
+
+### Custom Protocol Implementation
+
+You can implement custom protocols by extending the protocol handling:
+
+```php
+<?php
+
+namespace App\Protocol;
+
+use Workerman\Protocols\ProtocolInterface;
+
+class CustomProtocol implements ProtocolInterface
+{
+    public static function input($recv_buffer, $connection)
+    {
+        // Return 0 if not enough data for complete package
+        // Return package length if complete package received
+        $recv_len = strlen($recv_buffer);
+        if ($recv_len < 4) {
+            return 0;
+        }
+        
+        $unpack_data = unpack('Nlength', $recv_buffer);
+        $package_length = $unpack_data['length'];
+        
+        if ($recv_len < $package_length + 4) {
+            return 0;
+        }
+        
+        return $package_length + 4;
+    }
+    
+    public static function decode($recv_buffer, $connection)
+    {
+        $data = substr($recv_buffer, 4);
+        return json_decode($data, true);
+    }
+    
+    public static function encode($data, $connection)
+    {
+        $json_data = json_encode($data);
+        return pack('N', strlen($json_data)) . $json_data;
+    }
+}
+```
+
+### Advanced Worker Configuration
+
+For complex scenarios, you can customize Worker properties:
+
+```php
+<?php
+
+namespace App\Worker;
+
+use Tourze\Symfony\WorkermanBundle\Contracts\WorkerBuilderInterface;
+use Workerman\Worker;
+
+class AdvancedWorker implements WorkerBuilderInterface
+{
+    public function getName(): string
+    {
+        return 'advanced-worker';
+    }
+    
+    public function onWorkerStart(Worker $worker): void
+    {
+        // Set custom properties
+        $worker->reusePort = true;
+        $worker->count = 4; // Override default CPU count
+        
+        // Initialize resources
+        $this->initializeResources();
+    }
+    
+    public function onWorkerStop(Worker $worker): void
+    {
+        $this->cleanup();
+    }
+    
+    public function onWorkerReload(Worker $worker): void
+    {
+        $this->reloadConfiguration();
+    }
+    
+    private function initializeResources(): void
+    {
+        // Initialize databases, caches, etc.
+    }
+    
+    private function cleanup(): void
+    {
+        // Cleanup resources
+    }
+    
+    private function reloadConfiguration(): void
+    {
+        // Reload config without restart
+    }
+}
+```
+
+### Environment-specific Configuration
+
+Use Symfony's environment system for different configurations:
+
+```yaml
+# config/services.yaml
+services:
+    App\Worker\MyWorker:
+        arguments:
+            $port: '%env(WORKER_PORT)%'
+            $maxConnections: '%env(int:WORKER_MAX_CONNECTIONS)%'
+        tags:
+            - { name: 'workerman.worker' }
+```
+
+## Architecture Diagram
+
+```text
+       RunCommand
+          |
+          |-- Collects --> WorkerBuilderInterface Services
+          |                         |
+          |                         |-- Optional --> ConnectableInterface
+          |                         |-- Optional --> BufferAwareInterface
+          |
+          |-- Collects --> TimerInterface Services
+          |
+          |-- Creates --> Worker Instances
+          |                    |
+          |                    |-- Binds Events --> WorkerBuilderInterface
+          |                    |-- Conditional Events --> ConnectableInterface
+          |                    |-- Conditional Events --> BufferAwareInterface
+          |                    |-- Registers --> TimerInterface
+          |
+          |-- Uses --> CpuCoreCounter
+```
+
+## Technical Notes
+
+### Requirements
+- PHP CLI mode is required
+- Use daemon mode in production environments
+
+### Multi-process Considerations
+- Be aware of concurrent access to shared resources
+- Timer tasks execute in each Worker process
+- Services should be stateless or ensure state consistency
+
+### Performance Optimization
+- Worker count is automatically set to CPU core count
+- For CPU-intensive tasks: keep Workers = CPU cores
+- For IO-intensive tasks: can increase Worker count
+- Monitor buffer management to prevent memory overflow
+
+## Dependencies
+
+- **Core Dependencies:**
+  - `workerman/workerman`: Core async network framework
+  - `workerman/crontab`: Timer task support
+- **Helper Dependencies:**
+  - `fidry/cpu-core-counter`: CPU core detection
+  - `phpinnacle/buffer`: Binary data buffer handling
+
+## Contributing
+
+Please follow the standard contribution guidelines for this monorepo.
+
+## License
+
+This package is part of the tourze monorepo and follows its licensing terms.
